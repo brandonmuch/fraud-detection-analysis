@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Detection Analysis Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --navy: #1B3A5C;
+    --navy-light: #234b75;
+    --crimson: #C00000;
+    --crimson-light: #e8004a;
+    --amber: #E8890C;
+    --green: #2D7A4F;
+    --bg: #0a0f1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8edf5;
+    --muted: #6b7a99;
+    --accent: #4a9eff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(27,58,92,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 90%, rgba(192,0,0,0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+    animation: fadeDown 0.6s ease forwards;
+  }
+
+  .header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .header-left {}
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span {
+    color: var(--crimson);
+  }
+
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .header-meta strong {
+    color: var(--text);
+    display: block;
+    font-size: 0.85rem;
+  }
+
+  /* KPI CARDS */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-card.red::before { background: var(--crimson); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card.green::before { background: var(--green); }
+
+  .kpi-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .kpi-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .kpi-card.blue .kpi-value { color: var(--accent); }
+  .kpi-card.red .kpi-value { color: var(--crimson); }
+  .kpi-card.amber .kpi-value { color: var(--amber); }
+  .kpi-card.green .kpi-value { color: #4ade80; }
+
+  .kpi-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* CHARTS GRID */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+
+  .charts-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    position: relative;
+  }
+
+  .chart-card.full {
+    grid-column: 1 / -1;
+  }
+
+  .chart-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .chart-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 220px;
+  }
+
+  .chart-wrap.tall {
+    height: 280px;
+  }
+
+  /* FEATURE IMPORTANCE */
+  .feature-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+    animation: fadeLeft 0.5s ease both;
+  }
+
+  .feature-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    width: 180px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .feature-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .feature-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+  }
+
+  .feature-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    width: 50px;
+    text-align: right;
+  }
+
+  /* CONFUSION MATRIX */
+  .confusion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .cm-cell {
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .cm-cell.tp { background: rgba(45,122,79,0.2); border: 1px solid rgba(45,122,79,0.4); }
+  .cm-cell.tn { background: rgba(74,158,255,0.1); border: 1px solid rgba(74,158,255,0.2); }
+  .cm-cell.fp { background: rgba(192,0,0,0.1); border: 1px solid rgba(192,0,0,0.2); }
+  .cm-cell.fn { background: rgba(192,0,0,0.1); border: 1px solid rgba(192,0,0,0.2); }
+
+  .cm-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .cm-cell.tp .cm-number { color: #4ade80; }
+  .cm-cell.tn .cm-number { color: var(--accent); }
+  .cm-cell.fp .cm-number, .cm-cell.fn .cm-number { color: var(--crimson); }
+
+  .cm-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* MODEL PERFORMANCE */
+  .perf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .perf-item {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+
+  .perf-metric {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .perf-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #4ade80;
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 4rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    animation: fadeUp 0.6s ease 0.4s both;
+  }
+
+  .footer-left {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .footer-left strong {
+    color: var(--text);
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .footer-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid rgba(74,158,255,0.3);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .footer-links a:hover {
+    background: rgba(74,158,255,0.1);
+  }
+
+  .disclaimer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.7;
+    animation: fadeUp 0.6s ease 0.5s both;
+  }
+
+  .disclaimer strong {
+    color: var(--amber);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeLeft {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @media (max-width: 768px) {
+    .charts-grid, .charts-grid-3 { grid-template-columns: 1fr; }
+    .chart-card.full { grid-column: auto; }
+    .header-inner { flex-direction: column; align-items: flex-start; }
+    .header-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="eyebrow">Financial Crime Analytics</div>
+        <h1>Fraud Detection<br><span>Analysis Dashboard</span></h1>
+      </div>
+      <div class="header-meta">
+        <strong>Brandon Muchenje</strong>
+        AI Governance and GRC Analyst<br>
+        Synthetic Dataset — 1,000 Transactions<br>
+        Random Forest Classifier — May 2026
+      </div>
+    </div>
+  </header>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Transactions</div>
+      <div class="kpi-value">1,000</div>
+      <div class="kpi-sub">Analysed in dataset</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Fraudulent</div>
+      <div class="kpi-value">50</div>
+      <div class="kpi-sub">5.0% fraud rate</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Legitimate</div>
+      <div class="kpi-value">950</div>
+      <div class="kpi-sub">95.0% of transactions</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Model Accuracy</div>
+      <div class="kpi-value">100%</div>
+      <div class="kpi-sub">ROC AUC Score: 1.0000</div>
+    </div>
+  </div>
+
+  <!-- ROW 1 CHARTS -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Transaction Distribution</div>
+      <div class="chart-subtitle">Fraud vs Legitimate breakdown</div>
+      <div class="chart-wrap">
+        <canvas id="distChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Amount by Transaction Type</div>
+      <div class="chart-subtitle">Median transaction value comparison</div>
+      <div class="chart-wrap">
+        <canvas id="amountChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2 CHARTS -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Fraud Rate by Hour of Day</div>
+      <div class="chart-subtitle">When fraudulent transactions occur most</div>
+      <div class="chart-wrap tall">
+        <canvas id="hourChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Fraud Rate by Merchant Category</div>
+      <div class="chart-subtitle">Highest risk transaction categories</div>
+      <div class="chart-wrap tall">
+        <canvas id="merchantChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="charts-grid">
+
+    <!-- FEATURE IMPORTANCE -->
+    <div class="chart-card">
+      <div class="chart-title">Feature Importance</div>
+      <div class="chart-subtitle">What drives fraud detection decisions</div>
+      <div style="margin-top: 1.5rem;">
+        <div class="feature-bar" style="animation-delay: 0.1s">
+          <div class="feature-name">account_age_days</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 100%; background: linear-gradient(90deg, #4a9eff, #1B3A5C);"></div></div>
+          <div class="feature-score">0.3294</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.2s">
+          <div class="feature-name">distance_from_home</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 87%; background: linear-gradient(90deg, #4a9eff, #1B3A5C);"></div></div>
+          <div class="feature-score">0.2860</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.3s">
+          <div class="feature-name">num_transactions_24h</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 36%; background: linear-gradient(90deg, #4a9eff, #1B3A5C);"></div></div>
+          <div class="feature-score">0.1172</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.4s">
+          <div class="feature-name">customer_age</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 30%; background: linear-gradient(90deg, #E8890C, #c06a00);"></div></div>
+          <div class="feature-score">0.0989</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.5s">
+          <div class="feature-name">amount</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 29%; background: linear-gradient(90deg, #E8890C, #c06a00);"></div></div>
+          <div class="feature-score">0.0968</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.6s">
+          <div class="feature-name">hour_of_day</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 13%; background: linear-gradient(90deg, #C00000, #7b0000);"></div></div>
+          <div class="feature-score">0.0433</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.7s">
+          <div class="feature-name">day_of_week</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 8%; background: linear-gradient(90deg, #C00000, #7b0000);"></div></div>
+          <div class="feature-score">0.0250</div>
+        </div>
+        <div class="feature-bar" style="animation-delay: 0.8s">
+          <div class="feature-name">merchant_category</div>
+          <div class="feature-track"><div class="feature-fill" style="width: 1%; background: linear-gradient(90deg, #C00000, #7b0000);"></div></div>
+          <div class="feature-score">0.0033</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFUSION MATRIX AND PERFORMANCE -->
+    <div class="chart-card">
+      <div class="chart-title">Model Performance</div>
+      <div class="chart-subtitle">Confusion matrix and key metrics</div>
+
+      <div style="margin-bottom: 1rem; margin-top: 0.5rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; text-align: center; margin-bottom: 0.5rem;">
+          <div style="font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted);">PREDICTED LEGIT</div>
+          <div style="font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted);">PREDICTED FRAUD</div>
+        </div>
+        <div class="confusion-grid">
+          <div class="cm-cell tn">
+            <div class="cm-number">190</div>
+            <div class="cm-label">True Negative</div>
+            <div style="font-size: 0.65rem; color: var(--muted); margin-top: 0.25rem;">Legit correctly identified</div>
+          </div>
+          <div class="cm-cell fp">
+            <div class="cm-number">0</div>
+            <div class="cm-label">False Positive</div>
+            <div style="font-size: 0.65rem; color: var(--muted); margin-top: 0.25rem;">Legit wrongly flagged</div>
+          </div>
+          <div class="cm-cell fn">
+            <div class="cm-number">0</div>
+            <div class="cm-label">False Negative</div>
+            <div style="font-size: 0.65rem; color: var(--muted); margin-top: 0.25rem;">Fraud missed</div>
+          </div>
+          <div class="cm-cell tp">
+            <div class="cm-number">10</div>
+            <div class="cm-label">True Positive</div>
+            <div style="font-size: 0.65rem; color: var(--muted); margin-top: 0.25rem;">Fraud correctly caught</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="perf-grid">
+        <div class="perf-item">
+          <div class="perf-metric">ROC AUC Score</div>
+          <div class="perf-value">1.0000</div>
+        </div>
+        <div class="perf-item">
+          <div class="perf-metric">Fraud Recall</div>
+          <div class="perf-value">100%</div>
+        </div>
+        <div class="perf-item">
+          <div class="perf-metric">False Positives</div>
+          <div class="perf-value" style="color: #4ade80;">0</div>
+        </div>
+        <div class="perf-item">
+          <div class="perf-metric">Accuracy</div>
+          <div class="perf-value">100%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <strong>Note on Model Performance:</strong> Perfect accuracy (100%) and ROC AUC of 1.0 reflect the use of synthetic data with deliberately distinct fraud patterns. Real-world fraud detection on noisy transaction data typically achieves 85 to 95% accuracy. This project demonstrates the analytical and governance methodology applied to fraud detection, not production-ready model performance. All data is synthetic and hypothetical.
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-left">
+      <strong>Brandon Muchenje</strong>
+      AI Governance and GRC Analyst — BCom Law (Cum Laude) | IBM Data Science | IAPP AIGP Training
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/brandonmuch" target="_blank">GitHub</a>
+      <a href="https://www.linkedin.com/in/brandon-m-muchenje" target="_blank">LinkedIn</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#6b7a99', font: { family: 'DM Mono', size: 11 } } }
+    }
+  };
+
+  // Distribution Doughnut
+  new Chart(document.getElementById('distChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Legitimate (95%)', 'Fraudulent (5%)'],
+      datasets: [{
+        data: [950, 50],
+        backgroundColor: ['rgba(74,158,255,0.7)', 'rgba(192,0,0,0.7)'],
+        borderColor: ['#4a9eff', '#C00000'],
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { position: 'bottom', labels: { color: '#6b7a99', font: { family: 'DM Mono', size: 11 }, padding: 16 } }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // Amount comparison
+  new Chart(document.getElementById('amountChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Legitimate', 'Fraudulent'],
+      datasets: [
+        {
+          label: 'Median Amount',
+          data: [34.89, 1603.36],
+          backgroundColor: ['rgba(74,158,255,0.6)', 'rgba(192,0,0,0.6)'],
+          borderColor: ['#4a9eff', '#C00000'],
+          borderWidth: 2,
+          borderRadius: 6
+        },
+        {
+          label: 'Mean Amount',
+          data: [55.98, 1740.07],
+          backgroundColor: ['rgba(74,158,255,0.3)', 'rgba(192,0,0,0.3)'],
+          borderColor: ['#4a9eff', '#C00000'],
+          borderWidth: 2,
+          borderDash: [4, 4],
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 11 }, callback: v => '€' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Fraud by hour
+  const hours = Array.from({length: 24}, (_, i) => i);
+  const fraudByHour = [8.3, 7.1, 9.2, 11.1, 8.7, 6.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.2, 6.8, 0, 0, 0, 7.4, 8.9];
+
+  new Chart(document.getElementById('hourChart'), {
+    type: 'bar',
+    data: {
+      labels: hours.map(h => h + ':00'),
+      datasets: [{
+        label: 'Fraud Rate (%)',
+        data: fraudByHour,
+        backgroundColor: hours.map(h =>
+          (h >= 0 && h <= 5) || h >= 22 ? 'rgba(192,0,0,0.7)' : 'rgba(74,158,255,0.4)'
+        ),
+        borderColor: hours.map(h =>
+          (h >= 0 && h <= 5) || h >= 22 ? '#C00000' : '#4a9eff'
+        ),
+        borderWidth: 1,
+        borderRadius: 3
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 11 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Fraud by merchant
+  const merchants = ['Travel', 'Online Retail', 'Electronics', 'ATM Withdrawal', 'Luxury Goods', 'Petrol', 'Restaurant', 'Pharmacy', 'Grocery', 'Entertainment'];
+  const merchantRates = [18.2, 15.7, 14.3, 12.8, 11.4, 2.1, 1.8, 1.2, 0.9, 0.6];
+
+  new Chart(document.getElementById('merchantChart'), {
+    type: 'bar',
+    data: {
+      labels: merchants,
+      datasets: [{
+        label: 'Fraud Rate (%)',
+        data: merchantRates,
+        backgroundColor: merchantRates.map(r =>
+          r > 10 ? 'rgba(192,0,0,0.7)' : r > 5 ? 'rgba(232,137,12,0.7)' : 'rgba(74,158,255,0.4)'
+        ),
+        borderColor: merchantRates.map(r =>
+          r > 10 ? '#C00000' : r > 5 ? '#E8890C' : '#4a9eff'
+        ),
+        borderWidth: 1,
+        borderRadius: 3
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 11 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6b7a99', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
